@@ -20,3 +20,4 @@ export 'src/models/smartsave_event.dart';
 export 'src/models/smartsave_state.dart';
 export 'src/models/sync_report.dart';
 export 'src/models/transaction_query.dart';
+export 'src/transport/mock/mock_controls.dart';
