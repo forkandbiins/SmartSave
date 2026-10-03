@@ -1,8 +1,10 @@
 import 'dart:math';
 
 import 'application/smartsave_controller.dart';
+import 'application/connection_supervisor.dart';
 import 'config/smartsave_config.dart';
 import 'diagnostics/logger.dart';
+import 'diagnostics/raw_traffic_log.dart';
 import 'device/protocol_device_client.dart';
 import 'repository/default_smartsave_repository.dart';
 import 'storage/in_memory_store.dart';
@@ -24,8 +26,10 @@ final class SmartSaveBackend {
     required this.controller,
     required this._transport,
     required this._repository,
+    required this._client,
     required this.mockControls,
     required this.readinessProvider,
+    required this.connectionSupervisor,
   });
 
   /// Creates a backend for [config].
@@ -37,6 +41,7 @@ final class SmartSaveBackend {
   }) {
     final actualClock = clock ?? SystemClock();
     final actualLogger = logger ?? const NoopLogger();
+    final rawTraffic = RawTrafficLog(actualClock);
     late final DeviceTransport transport;
     late final MockControls? controls;
     late final BluetoothReadinessProvider readiness;
@@ -60,24 +65,36 @@ final class SmartSaveBackend {
       readiness = const MockReadinessProvider();
     }
     final actualStore = store ?? InMemoryStore();
+    final client = ProtocolDeviceClient(
+      transport,
+      null,
+      config,
+      actualClock,
+      actualLogger,
+      onTraffic: rawTraffic.add,
+    );
     final repository = DefaultSmartSaveRepository(
-      ProtocolDeviceClient(
-        transport,
-        null,
-        config,
-        actualClock,
-        actualLogger,
-      ),
+      client,
       actualStore,
       actualClock,
       actualLogger,
     );
+    ConnectionSupervisor? supervisor;
     final controller = SmartSaveController(
       config: config,
       clock: actualClock,
       transport: transport,
       repository: repository,
       client: repository.client,
+      rawTraffic: rawTraffic,
+      onBankConnected: (bank) => supervisor?.remember(bank),
+      onManualDisconnect: () => supervisor?.manualDisconnect(),
+    );
+    supervisor = ConnectionSupervisor(
+      config: config,
+      controller: controller,
+      transport: transport,
+      clock: actualClock,
     );
     return SmartSaveBackend._(
       controller: controller,
@@ -85,6 +102,8 @@ final class SmartSaveBackend {
       repository: repository,
       mockControls: controls,
       readinessProvider: readiness,
+      connectionSupervisor: supervisor,
+      client: client,
     );
   }
 
@@ -92,17 +111,22 @@ final class SmartSaveBackend {
   final SmartSaveController controller;
   final DeviceTransport _transport;
   final DefaultSmartSaveRepository _repository;
+  final ProtocolDeviceClient _client;
   /// Controls for the mock bank, or null for non-mock modes.
   final MockControls? mockControls;
   /// Provider used to check Bluetooth readiness.
   final BluetoothReadinessProvider readinessProvider;
+  /// Automatic reconnect supervisor.
+  final ConnectionSupervisor connectionSupervisor;
 
   /// Initializes local persistence.
   Future<void> initialize() => _repository.initialize();
 
   /// Releases all resources.
   Future<void> dispose() async {
+    await connectionSupervisor.dispose();
     await controller.dispose();
+    await _client.dispose();
     await _transport.dispose();
   }
 }

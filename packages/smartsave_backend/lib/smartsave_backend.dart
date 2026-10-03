@@ -6,6 +6,7 @@ export 'src/backend.dart' show SmartSaveBackend;
 export 'src/config/smartsave_config.dart'
     show SmartSaveConfig, SimulatorProfileName;
 export 'src/config/smartsave_mode.dart' show SmartSaveMode;
+export 'src/diagnostics/raw_traffic_log.dart' show RawTrafficEntry;
 export 'src/errors/action_result.dart'
     show ActionResult, ActionSuccess, ActionFailure;
 export 'src/errors/smartsave_error.dart'

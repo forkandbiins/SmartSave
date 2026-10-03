@@ -435,7 +435,7 @@ final class DefaultSmartSaveRepository implements SmartSaveRepository {
   void _onDeviceEvent(device.DeviceEvent event) {
     if (event is device.MalformedLine) {
       _malformedCount++;
-      if (_malformedCount >= 3) _scheduleSync();
+      if (_malformedCount == 3) _scheduleSync();
       return;
     }
     _malformedCount = 0;
@@ -498,6 +498,7 @@ final class DefaultSmartSaveRepository implements SmartSaveRepository {
       timestamp: clock.now(),
       timeAccuracy: TimeAccuracy.syncedLate,
     );
+    final previousTransactions = List<SavingsTransaction>.from(_transactions);
     _transactions.insert(0, transaction);
     _knownTotal = total;
     try {
@@ -505,6 +506,8 @@ final class DefaultSmartSaveRepository implements SmartSaveRepository {
       _events.add(models.ReconciliationApplied(transaction.amount));
       _publish();
     } on StorageError catch (error) {
+      _transactions = previousTransactions;
+      _knownTotal = old;
       _emitError(error);
     }
   }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../config/smartsave_config.dart';
+import '../diagnostics/raw_traffic_log.dart';
 import '../device/device_client.dart';
 import '../device/device_event.dart' as device;
 import '../errors/action_result.dart';
@@ -35,7 +36,10 @@ final class SmartSaveController extends ChangeNotifier {
     required this.transport,
     required this.repository,
     required this.client,
-  }) {
+    RawTrafficLog? rawTraffic,
+    this.onBankConnected,
+    this.onManualDisconnect,
+  }) : _rawTrafficLog = rawTraffic ?? RawTrafficLog(clock) {
     _state = SmartSaveState.initial(config.mode);
     _repositoryChanges = repository.changes.listen(_onRepositoryChange);
     _repositoryEvents = repository.events.listen(_events.add);
@@ -53,6 +57,12 @@ final class SmartSaveController extends ChangeNotifier {
   final DefaultSmartSaveRepository repository;
   /// Typed device client.
   final DeviceClient client;
+  /// Redacted recent device traffic.
+  final RawTrafficLog _rawTrafficLog;
+  /// Called when a bank becomes the reconnect target.
+  final void Function(DiscoveredBank bank)? onBankConnected;
+  /// Called before an intentional disconnect.
+  final void Function()? onManualDisconnect;
 
   late SmartSaveState _state;
   final _events = StreamController<SmartSaveEvent>.broadcast(sync: true);
@@ -75,6 +85,12 @@ final class SmartSaveController extends ChangeNotifier {
   /// Domain events for the UI.
   Stream<SmartSaveEvent> get events => _events.stream;
 
+  /// Recent redacted device traffic as it arrives.
+  Stream<RawTrafficEntry> get rawTraffic => _rawTrafficLog.stream;
+
+  /// Returns the most recent redacted traffic entries.
+  List<RawTrafficEntry> recentTraffic() => _rawTrafficLog.snapshot();
+
   /// Checks Bluetooth readiness.
   Future<ActionResult<BluetoothReadiness>> ensureBluetoothReady() =>
       _safe(() async => BluetoothReadiness.ready);
@@ -93,6 +109,7 @@ final class SmartSaveController extends ChangeNotifier {
   /// Connects to [bank] and performs handshake/synchronization.
   Future<ActionResult<void>> connect(DiscoveredBank bank) => _safe(() async {
         _lastBank = bank;
+        onBankConnected?.call(bank);
         _setState(_state.copyWith(link: LinkState.connecting));
         await transport.connect(bank);
         _setState(_state.copyWith(link: LinkState.handshaking));
@@ -117,6 +134,7 @@ final class SmartSaveController extends ChangeNotifier {
 
   /// Disconnects from the bank while retaining cached domain data.
   Future<ActionResult<void>> disconnect() => _safe(() async {
+        onManualDisconnect?.call();
         await transport.disconnect();
         _clearSession();
       });
@@ -284,11 +302,11 @@ final class SmartSaveController extends ChangeNotifier {
       _setState(_state.copyWith(lastError: error));
       _events.add(ErrorRaised(error));
       return ActionFailure(error);
-    } catch (_) {
-      const error = ProtocolError.invalidArgument();
-      _setState(_state.copyWith(lastError: error));
-      _events.add(const ErrorRaised(error));
-      return const ActionFailure(error);
+    } catch (error) {
+      final wrapped = ProtocolError.invalidArgument(error);
+      _setState(_state.copyWith(lastError: wrapped));
+      _events.add(ErrorRaised(wrapped));
+      return ActionFailure(wrapped);
     }
   }
 
@@ -373,6 +391,7 @@ final class SmartSaveController extends ChangeNotifier {
     await _clientEvents?.cancel();
     await _transportState?.cancel();
     await _events.close();
+    await _rawTrafficLog.dispose();
     super.dispose();
   }
 }
