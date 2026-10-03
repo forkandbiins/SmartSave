@@ -1,0 +1,152 @@
+# SmartSave stub conformance transcript v1
+# '>' app->bank   '<' bank->app   '@usb CMD [xN]' USB-only command   '@wait N' advance N seconds   '@drain' discard pending output   '#' comment
+# Preconditions: SIMULATE_COINS 0 and fresh state (the first step sends FACTORY over USB).
+# Rule: before every '>' or '@' step, all previous output must have been consumed by '<' lines.
+
+# S1 fresh bank and PIN setup
+@usb FACTORY
+> HELLO
+< PROTO:1
+< AUTH:NEW
+> AUTH:1234
+< AUTH:NEW
+> UNLOCK:1234,5
+< AUTH:NEW
+> SETPIN:12
+< ERR:FMT
+> SETPIN:1234,5678
+< ERR:FMT
+> SETPIN:1234
+< AUTH:OK
+> HELLO
+< PROTO:1
+< AUTH:REQ
+
+# S2 login
+> AUTH:0000
+< AUTH:FAIL
+> AUTH:1234
+< AUTH:OK
+> AUTH:12
+< ERR:FMT
+
+# S3 coins, sync, cumulative ack
+@usb SIM:5
+< COIN:5,1
+< TOTAL:5
+@usb SIM:20
+< COIN:20,2
+< TOTAL:25
+@usb SIM:10
+< COIN:10,3
+< TOTAL:35
+> SYNC
+< TOTAL:35
+< LOCK:1
+< SEQ:3
+< COIN:5,1
+< COIN:20,2
+< COIN:10,3
+< SYNC:END
+> ACK:2
+> SYNC
+< TOTAL:35
+< LOCK:1
+< SEQ:3
+< COIN:10,3
+< SYNC:END
+> ACK:3
+> ACK:9
+> SYNC
+< TOTAL:35
+< LOCK:1
+< SEQ:3
+< SYNC:END
+
+# S4 unlock and lock
+> UNLOCK:0000,10
+< AUTH:FAIL
+> UNLOCK:1234,0
+< ERR:AMT
+> UNLOCK:1234,36
+< ERR:AMT
+> UNLOCK:1234,abc
+< ERR:AMT
+> UNLOCK:1234
+< ERR:AMT
+> UNLOCK:1234,30
+< TOTAL:5
+< LOCK:0
+> SYNC
+< TOTAL:5
+< LOCK:0
+< SEQ:3
+< SYNC:END
+@wait 30
+< LOCK:1
+> LOCK
+< LOCK:1
+
+# S5 lockout after three wrong PINs
+> AUTH:0000
+< AUTH:FAIL
+> AUTH:0000
+< AUTH:FAIL
+> AUTH:0000
+< AUTH:FAIL
+> AUTH:1234
+< AUTH:WAIT
+> UNLOCK:1234,1
+< AUTH:WAIT
+@wait 31
+> AUTH:1234
+< AUTH:OK
+
+# S6 adjust
+> ADJ:1234,100
+< TOTAL:100
+> ADJ:1234,100000
+< ERR:AMT
+> ADJ:1234,abc
+< ERR:AMT
+> ADJ:1234
+< ERR:AMT
+
+# S7 change PIN
+> SETPIN:1234,5678
+< AUTH:OK
+> AUTH:1234
+< AUTH:FAIL
+> SETPIN:5678
+< ERR:FMT
+> SETPIN:5678,1234
+< AUTH:OK
+
+# S8 misc
+> PING
+< PONG
+> FOO
+< ERR:CMD
+> SIM:5
+< ERR:CMD
+> ACK:abc
+> THISLINEISWAYTOOLONGTOBEACCEPTED
+> PING
+< PONG
+
+# S9 replay buffer holds only the last 32 coins
+@usb FACTORY
+@usb SIM:1 x40
+@drain
+> SYNC
+< TOTAL:40
+< LOCK:1
+< SEQ:40
+< COIN:1,{9..40}
+< SYNC:END
+> ACK:40
+> SYNC
+< TOTAL:40
+< LOCK:1
+< SEQ:40
+< SYNC:END

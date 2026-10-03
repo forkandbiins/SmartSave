@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Backend dependencies
+        working-directory: packages/smartsave_backend
+        run: flutter pub get
+      - name: Backend analyze
+        working-directory: packages/smartsave_backend
+        run: flutter analyze
+      - name: Backend tests
+        working-directory: packages/smartsave_backend
+        run: flutter test
+      - name: App dependencies
+        working-directory: app
+        run: flutter pub get
+      - name: App analyze
+        working-directory: app
+        run: flutter analyze
+      - name: App tests
+        working-directory: app
+        run: flutter test
+      - name: Enforce UI import boundaries
+        shell: bash
+        run: |
+          ! grep -R "package:smartsave_backend/src" app/lib
+          ! grep -R -E "flutter_reactive_ble|permission_handler" app/lib
