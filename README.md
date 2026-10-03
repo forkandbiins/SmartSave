@@ -1,11 +1,19 @@
 # SmartSave
 
-SmartSave is a Philippine coin bank for ₱1, ₱5, ₱10, and ₱20 coins. A
-physical **Bank** uses an Arduino and HM-10 Bluetooth module; the Flutter
-**Backend** connects to it, synchronizes the authoritative balance, records
-history, and manages app-local savings goals. The **Firmware Stub** and
-**Simulator** provide the same wire behavior before the finished hardware is
-available.
+SmartSave is our BS Computer Science coin bank project: an Arduino Uno with an
+HM-10 Bluetooth module (the **Bank**) that accepts the new ₱1, ₱5, ₱10, and ₱20
+coins, plus a Flutter app that tracks the savings. This repo holds all of it,
+and the **Backend** is the part the whole team depends on.
+
+The Backend (`packages/smartsave_backend`) sits between the UI and the Bank. It
+does everything the UI should not: it connects to the Bank over Bluetooth,
+keeps the Bank's balance as the authority, records each coin as history, tracks
+savings goals on the phone, and handles the PIN. The UI only reads the
+Backend's state and calls its methods; it never touches Bluetooth.
+
+Until the finished hardware is ready, the **Firmware Stub** (Arduino) and the
+**Simulator** (built into the Backend) behave like the real Bank, so you can
+build and test the UI without any hardware.
 
 ## Repository layout
 
@@ -26,7 +34,7 @@ Start with:
 
 ---
 
-# For UI developers (Members 2 and 3)
+# UI development
 
 ## 1. Set up (about 15 minutes)
 
