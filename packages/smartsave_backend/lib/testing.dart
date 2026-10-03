@@ -7,6 +7,9 @@ export 'src/models/savings_goal.dart';
 export 'src/models/savings_transaction.dart';
 export 'src/models/smartsave_state.dart';
 export 'src/config/smartsave_mode.dart';
+export 'src/storage/in_memory_store.dart' show InMemoryStore;
+export 'src/testing/mock_bank.dart' show MockBank;
+export 'src/backend.dart' show createMockBackend;
 
 import 'src/config/smartsave_mode.dart';
 import 'src/models/denomination.dart';

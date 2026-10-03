@@ -18,6 +18,7 @@ import 'transport/mock/fake_device_simulator.dart';
 import 'transport/mock/mock_controls.dart';
 import 'transport/mock/mock_transport.dart';
 import 'transport/mock/simulator_profile.dart';
+import 'testing/mock_bank.dart';
 import 'util/clock.dart';
 
 /// The SmartSave composition root.
@@ -38,7 +39,16 @@ final class SmartSaveBackend {
     Clock? clock,
     SmartSaveStore? store,
     SmartSaveLogger? logger,
-  }) {
+  }) =>
+      _createBackend(config, clock: clock, store: store, logger: logger);
+
+  static SmartSaveBackend _createBackend(
+  SmartSaveConfig config, {
+  Clock? clock,
+  SmartSaveStore? store,
+  SmartSaveLogger? logger,
+  MockBank? mockBank,
+}) {
     final actualClock = clock ?? SystemClock();
     final actualLogger = logger ?? const NoopLogger();
     final rawTraffic = RawTrafficLog(actualClock);
@@ -54,16 +64,21 @@ final class SmartSaveBackend {
       readiness = BlePermissionsProvider(gateway);
       controls = null;
     } else {
-      final simulator = FakeDeviceSimulator(
-        actualClock,
-        Random(Object.hash(actualClock, config.simulatorProfile)),
-        SimulatorProfile.fromName(config.simulatorProfile),
+      final simulator = (mockBank?.simulatorHandle as FakeDeviceSimulator?) ??
+          FakeDeviceSimulator(
+            actualClock,
+            Random(Object.hash(actualClock, config.simulatorProfile)),
+            SimulatorProfile.fromName(config.simulatorProfile),
+          );
+      final mockTransport = MockTransport(
+        simulator,
+        disposeSimulator: mockBank == null,
       );
-      final mockTransport = MockTransport(simulator);
       transport = mockTransport;
       controls = MockControls(simulator, mockTransport);
       readiness = const MockReadinessProvider();
     }
+
     final actualStore = store ?? InMemoryStore();
     final client = ProtocolDeviceClient(
       transport,
@@ -129,4 +144,23 @@ final class SmartSaveBackend {
     await _client.dispose();
     await _transport.dispose();
   }
+
 }
+
+/// Creates a mock backend around a reusable testing bank.
+///
+/// This helper is exported only by `testing.dart`.
+SmartSaveBackend createMockBackend(
+  SmartSaveConfig config,
+  MockBank bank, {
+  Clock? clock,
+  SmartSaveStore? store,
+  SmartSaveLogger? logger,
+}) =>
+    SmartSaveBackend._createBackend(
+      config,
+      clock: clock,
+      store: store,
+      logger: logger,
+      mockBank: bank,
+    );

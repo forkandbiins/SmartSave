@@ -11,6 +11,7 @@ final class MockTransport implements DeviceTransport {
     this.simulator, {
     this.latency = Duration.zero,
     this.autoTick = true,
+    this.disposeSimulator = true,
   }) {
     _outputSubscription = simulator.output.listen((line) {
       if (_connected) {
@@ -37,6 +38,8 @@ final class MockTransport implements DeviceTransport {
   Duration latency;
   /// Whether the periodic simulator clock hook is enabled.
   final bool autoTick;
+  /// Whether disposing this transport also disposes its simulator.
+  final bool disposeSimulator;
   final StreamController<TransportState> _states =
       StreamController<TransportState>.broadcast(sync: true);
   final StreamController<String> _lines =
@@ -89,7 +92,7 @@ final class MockTransport implements DeviceTransport {
     _connected = false;
     _timer?.cancel();
     await _outputSubscription?.cancel();
-    await simulator.dispose();
+    if (disposeSimulator) await simulator.dispose();
     await _states.close();
     await _lines.close();
   }
