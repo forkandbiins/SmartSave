@@ -107,10 +107,9 @@ void main() {
     await backend.dispose();
   });
 
-  test('BLE mode is explicitly unavailable', () {
-    expect(
-      () => SmartSaveBackend.create(SmartSaveConfig.ble()),
-      throwsA(isA<SmartSaveStateError>()),
-    );
+  test('BLE mode can be composed without hardware', () async {
+    final backend = SmartSaveBackend.create(SmartSaveConfig.ble());
+    expect(backend.mockControls, isNull);
+    await backend.dispose();
   });
 }
