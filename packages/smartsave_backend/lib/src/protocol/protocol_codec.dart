@@ -1,5 +1,8 @@
 import '../models/denomination.dart';
+import '../config/protocol_limits.dart';
+import '../errors/smartsave_error.dart';
 import 'device_message.dart';
+import 'device_command.dart';
 
 /// Decodes bank-to-app protocol lines.
 final class ProtocolCodec {
@@ -18,6 +21,7 @@ final class ProtocolCodec {
     if (!_knownTokens.contains(token)) {
       return MalformedMessage(raw, MalformedReason.unknownToken);
     }
+
     if (argument == null) {
       return MalformedMessage(raw, MalformedReason.badArgument);
     }
@@ -67,6 +71,55 @@ final class ProtocolCodec {
         }
     }
     return MalformedMessage(raw, MalformedReason.unknownToken);
+  }
+
+  /// Encodes an app-to-bank command without a trailing newline.
+  static String encode(DeviceCommand command) {
+    final line = switch (command) {
+      HelloCommand() => 'HELLO',
+      LoginCommand(:final pin) => 'AUTH:$pin',
+      SetInitialPinCommand(:final pin) => 'SETPIN:$pin',
+      ChangePinCommand(:final oldPin, :final newPin) =>
+        'SETPIN:$oldPin,$newPin',
+      SyncCommand() => 'SYNC',
+      AckCommand(:final seq) => 'ACK:$seq',
+      LockCommand() => 'LOCK',
+      UnlockCommand(:final pin, :final amount) => 'UNLOCK:$pin,$amount',
+      AdjustCommand(:final pin, :final newTotal) => 'ADJ:$pin,$newTotal',
+      PingCommand() => 'PING',
+    };
+
+    switch (command) {
+      case LoginCommand(:final pin):
+        _validatePin(pin);
+      case SetInitialPinCommand(:final pin):
+        _validatePin(pin);
+      case ChangePinCommand(:final oldPin, :final newPin):
+        _validatePin(oldPin);
+        _validatePin(newPin);
+      case UnlockCommand(:final pin, :final amount):
+        _validatePin(pin);
+        _validateRange(amount, 1, ProtocolLimits.maxTotal);
+      case AdjustCommand(:final pin, :final newTotal):
+        _validatePin(pin);
+        _validateRange(newTotal, 0, ProtocolLimits.maxTotal);
+      case AckCommand(:final seq):
+        _validateRange(seq, 0, ProtocolLimits.maxSeq);
+      default:
+        break;
+    }
+    if (line.length > ProtocolLimits.maxOutboundLineChars) {
+      throw InvalidArgumentError();
+    }
+    return line;
+  }
+
+  static void _validatePin(String pin) {
+    if (!RegExp(r'^\d{4}$').hasMatch(pin)) throw InvalidArgumentError();
+  }
+
+  static void _validateRange(int value, int minimum, int maximum) {
+    if (value < minimum || value > maximum) throw InvalidArgumentError();
   }
 
   static const Set<String> _knownTokens = <String>{
