@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smartsave_backend/smartsave_backend.dart';
+import 'package:smartsave_backend/src/config/protocol_limits.dart';
 
 void main() {
   test('protocol limits mirror the firmware', () {
