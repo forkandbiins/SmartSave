@@ -1,0 +1,15 @@
+# Backend and hardware ownership: Member 1
+/packages/smartsave_backend/ @member1
+/firmware/ @member1
+
+# Dashboard, goals, and statistics: Member 2
+/app/lib/features/dashboard/ @member2
+/app/lib/features/goals/ @member2
+/app/lib/features/statistics/ @member2
+
+# History, auth, settings, connection, and shared UI: Member 3
+/app/lib/features/history/ @member3
+/app/lib/features/auth/ @member3
+/app/lib/features/settings/ @member3
+/app/lib/features/connection/ @member3
+/app/lib/shared/ @member3
