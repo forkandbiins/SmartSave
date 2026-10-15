@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smartsave_backend/smartsave_backend.dart';
 
+import '../features/dashboard/dashboard_screen.dart';
 import '../features/goals/widgets/goal_card.dart';
 import 'theme.dart';
 
@@ -27,7 +28,7 @@ class _HomeShellState extends State<HomeShell> {
         child: IndexedStack(
           index: _index,
           children: [
-            const _PlaceholderTab('Home'),
+            DashboardScreen(controller: widget.controller),
             const _PlaceholderTab('History'),
             _GoalsTab(controller: widget.controller),
             const _PlaceholderTab('Stats'),
