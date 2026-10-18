@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.csb.smartsave.smartsave"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

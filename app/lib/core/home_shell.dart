@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:smartsave_backend/smartsave_backend.dart';
 
 import '../features/dashboard/dashboard_screen.dart';
+import '../features/history/history_screen.dart';
 import '../features/goals/widgets/goal_card.dart';
+import '../features/settings/settings_screen.dart';
 import 'theme.dart';
 
 /// Logged-in shell with five tabs. Goal lists [SmartSaveState.goals]; other tabs are placeholders.
@@ -29,10 +31,10 @@ class _HomeShellState extends State<HomeShell> {
           index: _index,
           children: [
             DashboardScreen(controller: widget.controller),
-            const _PlaceholderTab('History'),
+            HistoryScreen(controller: widget.controller),
             _GoalsTab(controller: widget.controller),
             const _PlaceholderTab('Stats'),
-            const _PlaceholderTab('Settings'),
+            SettingsScreen(controller: widget.controller),
           ],
         ),
       ),
@@ -107,7 +109,52 @@ class _GoalsTab extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: goals.length,
-      itemBuilder: (context, index) => GoalCard(goal: goals[index]),
+      itemBuilder: (context, index) => GoalCard(
+        goal: goals[index],
+        onRedeem: goals[index].isReached
+            ? () => _redeemGoal(context, goals[index])
+            : null,
+      ),
+    );
+  }
+
+  Future<void> _redeemGoal(BuildContext context, SavingsGoal goal) async {
+    final pin = TextEditingController();
+    final enteredPin = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Redeem goal'),
+        content: TextField(
+          controller: pin,
+          obscureText: true,
+          keyboardType: TextInputType.number,
+          maxLength: 4,
+          decoration: const InputDecoration(labelText: 'Bank PIN'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, pin.text),
+            child: const Text('Redeem'),
+          ),
+        ],
+      ),
+    );
+    pin.dispose();
+    if (enteredPin == null || !context.mounted) return;
+    final result = await controller.redeemGoal(goal.id, enteredPin);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result.isSuccess
+              ? 'Goal redeemed. Your Bank is unlocked.'
+              : 'Could not redeem the goal. Check your PIN and try again.',
+        ),
+      ),
     );
   }
 }
