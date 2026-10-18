@@ -36,6 +36,7 @@ final class SmartSaveController extends ChangeNotifier {
     required this.transport,
     required this.repository,
     required this.client,
+    required this.readinessProvider,
     RawTrafficLog? rawTraffic,
     this.onBankConnected,
     this.onManualDisconnect,
@@ -57,6 +58,8 @@ final class SmartSaveController extends ChangeNotifier {
   final DefaultSmartSaveRepository repository;
   /// Typed device client.
   final DeviceClient client;
+  /// Checks Bluetooth adapter state and runtime permissions.
+  final BluetoothReadinessProvider readinessProvider;
   /// Redacted recent device traffic.
   final RawTrafficLog _rawTrafficLog;
   /// Called when a bank becomes the reconnect target.
@@ -93,7 +96,7 @@ final class SmartSaveController extends ChangeNotifier {
 
   /// Checks Bluetooth readiness.
   Future<ActionResult<BluetoothReadiness>> ensureBluetoothReady() =>
-      _safe(() async => BluetoothReadiness.ready);
+      _safe(readinessProvider.check);
 
   /// Scans for banks.
   Future<ActionResult<List<DiscoveredBank>>> scan() => _safe(() async {

@@ -101,6 +101,7 @@ final class SmartSaveBackend {
       transport: transport,
       repository: repository,
       client: repository.client,
+      readinessProvider: readiness,
       rawTraffic: rawTraffic,
       onBankConnected: (bank) => supervisor?.remember(bank),
       onManualDisconnect: () => supervisor?.manualDisconnect(),

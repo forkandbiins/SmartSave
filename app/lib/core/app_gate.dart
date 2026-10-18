@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:smartsave_backend/smartsave_backend.dart';
 
+import '../features/auth/auth_screen.dart';
+import '../features/connection/connection_screen.dart';
 import 'home_shell.dart';
-import 'mascot.dart';
 import 'theme.dart';
 
-/// Routes between connection/auth placeholders and [HomeShell] from link/auth state.
+/// Routes between connection/auth screens and [HomeShell] from link/auth state.
 class AppGate extends StatelessWidget {
   const AppGate({super.key, required this.controller});
 
@@ -20,115 +21,29 @@ class AppGate extends StatelessWidget {
         final state = controller.state;
         switch (state.link) {
           case LinkState.disconnected:
-            return const _PlaceholderScreen(
-              label: 'Connection screen (Member 3)',
-              message: 'Find your Bank to get started.',
-            );
+            return ConnectionScreen(controller: controller);
           case LinkState.scanning:
           case LinkState.connecting:
           case LinkState.handshaking:
-            return const _ProgressScreen();
+            return ConnectionScreen(controller: controller);
           case LinkState.ready:
             switch (state.auth) {
               case AuthState.pinNotSet:
-                return const _PlaceholderScreen(
-                  label: 'Set PIN screen (Member 3)',
-                  message: 'Choose a 4-digit PIN for your Bank.',
-                );
+                return AuthScreen(controller: controller);
               case AuthState.loggedOut:
-                return const _PlaceholderScreen(
-                  label: 'Login screen (Member 3)',
-                  message: 'Enter your PIN to see your savings.',
-                );
+                return AuthScreen(controller: controller);
               case AuthState.lockedOut:
-                return const _PlaceholderScreen(
-                  label: 'Lockout countdown (Member 3)',
-                  message: 'Too many tries. Please wait a little.',
-                );
+                return AuthScreen(controller: controller);
               case AuthState.loggedIn:
                 return HomeShell(controller: controller);
               case AuthState.unknown:
-                return const _ProgressScreen();
+                return const Scaffold(
+                  backgroundColor: SmartSaveTokens.background,
+                  body: Center(child: CircularProgressIndicator()),
+                );
             }
         }
       },
-    );
-  }
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.label, required this.message});
-
-  final String label;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: SmartSaveTokens.background,
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const PigMascot(size: 96),
-                const SizedBox(height: 24),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: SmartSaveTokens.inkSoft,
-                      ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProgressScreen extends StatelessWidget {
-  const _ProgressScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: SmartSaveTokens.background,
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const PigMascot(size: 96),
-                const SizedBox(height: 24),
-                Text(
-                  'Hang on, connecting…',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 24),
-                const SizedBox(
-                  width: SmartSaveTokens.minTapTarget,
-                  height: SmartSaveTokens.minTapTarget,
-                  child: CircularProgressIndicator(),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
