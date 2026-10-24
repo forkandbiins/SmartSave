@@ -22,6 +22,7 @@ class DashboardView extends StatelessWidget {
     required this.isSyncing,
     required this.lastError,
     required this.now,
+    this.onOpenGoals,
   });
 
   /// Authoritative device total, or null before first sync.
@@ -53,6 +54,9 @@ class DashboardView extends StatelessWidget {
 
   /// Current time for greeting and relative timestamps.
   final DateTime now;
+
+  /// Called when the goal card's button is pressed to open the Goal tab.
+  final VoidCallback? onOpenGoals;
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +90,7 @@ class DashboardView extends StatelessWidget {
                 if (lastError != null) const SizedBox(height: 12),
                 TotalSavingsCard(deviceTotal: deviceTotal),
                 const SizedBox(height: 12),
-                GoalProgressCard(goal: activeGoal),
+                GoalProgressCard(goal: activeGoal, onOpenGoals: onOpenGoals),
                 const SizedBox(height: 12),
                 StatGrid(
                   todayTotal: todayTotal,

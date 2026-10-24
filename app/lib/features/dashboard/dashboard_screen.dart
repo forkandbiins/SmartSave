@@ -6,10 +6,17 @@ import 'widgets/dashboard_view.dart';
 /// Thin wrapper that reads the controller via [ListenableBuilder] and feeds
 /// plain data to [DashboardView]. No controller dependency leaks into tests.
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key, required this.controller});
+  const DashboardScreen({
+    super.key,
+    required this.controller,
+    this.onOpenGoals,
+  });
 
   /// Backend controller whose state drives the dashboard.
   final SmartSaveController controller;
+
+  /// Called to switch to the Goal tab from the goal card.
+  final VoidCallback? onOpenGoals;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +69,7 @@ class DashboardScreen extends StatelessWidget {
           isSyncing: state.syncStatus == SyncStatus.syncing,
           lastError: state.lastError,
           now: now,
+          onOpenGoals: onOpenGoals,
         );
       },
     );
