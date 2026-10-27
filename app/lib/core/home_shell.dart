@@ -41,7 +41,7 @@ class _HomeShellState extends State<HomeShell> {
             ),
             HistoryScreen(controller: widget.controller),
             GoalsScreen(controller: widget.controller),
-            StatisticsScreen(controller: widget.controller),
+            const _PlaceholderTab('Stats'),
             SettingsScreen(controller: widget.controller),
           ],
         ),
@@ -92,5 +92,16 @@ class _HomeShellState extends State<HomeShell> {
         ),
       ),
     );
+  }
+}
+
+class _PlaceholderTab extends StatelessWidget {
+  const _PlaceholderTab(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: Text(label));
   }
 }

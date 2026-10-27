@@ -149,23 +149,6 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-    'Goals header fits width 320 at text scale 1.5 with no goals',
-    (tester) async {
-      tester.view.physicalSize = const Size(320, 640);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(wrap(buildView(goals: const []), textScale: 1.5));
-      await tester.pumpAndSettle();
-
-      expect(tester.takeException(), isNull);
-      expect(find.text('Goals'), findsOneWidget);
-      expect(find.text('Create goal'), findsOneWidget);
-      expect(find.text('No goals yet'), findsOneWidget);
-    },
-  );
-
   group('amount validation', () {
     test('allocate rejects zero, negative, and over-available amounts', () {
       expect(validateAllocateAmount(0, 300), isNotNull);

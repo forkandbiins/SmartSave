@@ -70,13 +70,11 @@ class GoalsView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
       children: [
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 12,
-          runSpacing: 8,
+        Row(
           children: [
-            Text('Goals', style: theme.textTheme.titleLarge),
+            Expanded(
+              child: Text('Goals', style: theme.textTheme.titleLarge),
+            ),
             FilledButton.icon(
               onPressed: busy ? null : onCreate,
               icon: const Icon(Icons.add),
