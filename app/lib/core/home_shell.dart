@@ -8,7 +8,7 @@ import '../features/settings/settings_screen.dart';
 import '../features/statistics/statistics_screen.dart';
 import 'theme.dart';
 
-/// Logged-in shell with five tabs. Goal lists [SmartSaveState.goals]; other tabs are placeholders.
+/// Logged-in shell with five tabs: Home, History, Goal, Stats and Settings.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key, required this.controller});
 

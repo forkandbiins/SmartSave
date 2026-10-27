@@ -58,10 +58,16 @@ class SettingsScreen extends StatelessWidget {
     final values = await showDialog<(String, String)>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Correct Bank balance'),
+        title: const Text('Fix your balance'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'Enter the total amount that is really in your Bank.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
             TextField(
               controller: amount,
               keyboardType: TextInputType.number,
@@ -200,16 +206,20 @@ class SettingsScreen extends StatelessWidget {
                       : 'Bank locked',
                 ),
                 subtitle: Text(
-                  total == null
-                      ? 'Balance not synced yet'
-                      : 'Balance ${formatPeso(total)}',
+                  <String>[
+                    total == null
+                        ? 'Balance not synced yet'
+                        : 'Balance ${formatPeso(total)}',
+                    if (state.lock != LockState.unlocked)
+                      'Redeem a goal to unlock',
+                  ].join('\n'),
                 ),
                 trailing: state.lock == LockState.unlocked
                     ? OutlinedButton(
                         onPressed: () => controller.lockBank(),
                         child: const Text('Lock'),
                       )
-                    : const Text('Redeem a goal to unlock'),
+                    : null,
               ),
             ),
             Card(
