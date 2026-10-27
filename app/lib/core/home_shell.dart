@@ -5,6 +5,7 @@ import '../features/dashboard/dashboard_screen.dart';
 import '../features/goals/goals_screen.dart';
 import '../features/history/history_screen.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/statistics/statistics_screen.dart';
 import 'theme.dart';
 
 /// Logged-in shell with five tabs. Goal lists [SmartSaveState.goals]; other tabs are placeholders.
