@@ -1,7 +1,4 @@
-import 'package:flutter/material.dart';
 import 'package:smartsave_backend/smartsave_backend.dart';
-
-import '../../../core/theme.dart';
 
 /// Maps a [SmartSaveError.code] to a short, friendly message for the UI.
 ///
@@ -58,52 +55,5 @@ String friendlyMessageFor(SmartSaveErrorCode code) {
       return 'Connect to your bank first.';
     case SmartSaveErrorCode.invalidOperation:
       return "That action isn't available right now.";
-  }
-}
-
-/// A friendly error banner shown when [error] is non-null.
-///
-/// Maps the error code to plain text and pairs it with a warning icon.
-class ErrorBanner extends StatelessWidget {
-  const ErrorBanner({super.key, required this.error});
-
-  /// The error to display. If null, the banner renders nothing.
-  final SmartSaveError? error;
-
-  @override
-  Widget build(BuildContext context) {
-    final error = this.error;
-    if (error == null) return const SizedBox.shrink();
-    final message = friendlyMessageFor(error.code);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: SmartSaveTokens.accentSoft.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(SmartSaveTokens.radiusCard),
-        border: Border.all(
-          color: SmartSaveTokens.accent.withValues(alpha: 0.45),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.warning_amber_rounded,
-            color: SmartSaveTokens.accent,
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: SmartSaveTokens.body.copyWith(
-                color: SmartSaveTokens.ink,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

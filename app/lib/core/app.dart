@@ -15,6 +15,7 @@ class SmartSaveApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'SmartSave',
+      debugShowCheckedModeBanner: false,
       theme: smartSaveTheme,
       home: AppGate(controller: controller),
     );

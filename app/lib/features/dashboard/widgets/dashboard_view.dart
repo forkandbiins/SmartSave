@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:smartsave_backend/smartsave_backend.dart';
 
 import '../../../core/greeting_header.dart';
+import '../../../shared/widgets/smart_save_scaffold.dart';
 import 'error_banner.dart';
 import 'goal_progress_card.dart';
 import 'recent_deposits.dart';
@@ -22,6 +23,7 @@ class DashboardView extends StatelessWidget {
     required this.isSyncing,
     required this.lastError,
     required this.now,
+    this.onOpenGoals,
   });
 
   /// Authoritative device total, or null before first sync.
@@ -54,6 +56,9 @@ class DashboardView extends StatelessWidget {
   /// Current time for greeting and relative timestamps.
   final DateTime now;
 
+  /// Called when the goal card's button is pressed to open the Goal tab.
+  final VoidCallback? onOpenGoals;
+
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
@@ -82,11 +87,15 @@ class DashboardView extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                ErrorBanner(error: lastError),
-                if (lastError != null) const SizedBox(height: 12),
+                if (lastError != null) ...[
+                  SmartSaveErrorText(
+                    message: friendlyMessageFor(lastError!.code),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 TotalSavingsCard(deviceTotal: deviceTotal),
                 const SizedBox(height: 12),
-                GoalProgressCard(goal: activeGoal),
+                GoalProgressCard(goal: activeGoal, onOpenGoals: onOpenGoals),
                 const SizedBox(height: 12),
                 StatGrid(
                   todayTotal: todayTotal,

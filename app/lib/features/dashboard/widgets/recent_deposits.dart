@@ -160,9 +160,11 @@ class RecentDeposits extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(
-                  'Recent deposits',
-                  style: Theme.of(context).textTheme.titleMedium,
+                Expanded(
+                  child: Text(
+                    'Recent deposits',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
               ],
             ),

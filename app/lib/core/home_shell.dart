@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:smartsave_backend/smartsave_backend.dart';
 
 import '../features/dashboard/dashboard_screen.dart';
+import '../features/goals/goals_screen.dart';
 import '../features/history/history_screen.dart';
-import '../features/goals/widgets/goal_card.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/statistics/statistics_screen.dart';
 import 'theme.dart';
 
-/// Logged-in shell with five tabs. Goal lists [SmartSaveState.goals]; other tabs are placeholders.
+/// Logged-in shell with five tabs: Home, History, Goal, Stats and Settings.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key, required this.controller});
 
@@ -22,6 +22,10 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
+  static const int _goalsTabIndex = 2;
+
+  void _openGoalsTab() => setState(() => _index = _goalsTabIndex);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,9 +35,12 @@ class _HomeShellState extends State<HomeShell> {
         child: IndexedStack(
           index: _index,
           children: [
-            DashboardScreen(controller: widget.controller),
+            DashboardScreen(
+              controller: widget.controller,
+              onOpenGoals: _openGoalsTab,
+            ),
             HistoryScreen(controller: widget.controller),
-            _GoalsTab(controller: widget.controller),
+            GoalsScreen(controller: widget.controller),
             StatisticsScreen(controller: widget.controller),
             SettingsScreen(controller: widget.controller),
           ],
@@ -82,67 +89,6 @@ class _HomeShellState extends State<HomeShell> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GoalsTab extends StatelessWidget {
-  const _GoalsTab({required this.controller});
-
-  final SmartSaveController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final goals = controller.state.goals;
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: goals.length,
-      itemBuilder: (context, index) => GoalCard(
-        goal: goals[index],
-        onRedeem: goals[index].isReached
-            ? () => _redeemGoal(context, goals[index])
-            : null,
-      ),
-    );
-  }
-
-  Future<void> _redeemGoal(BuildContext context, SavingsGoal goal) async {
-    final pin = TextEditingController();
-    final enteredPin = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Redeem goal'),
-        content: TextField(
-          controller: pin,
-          obscureText: true,
-          keyboardType: TextInputType.number,
-          maxLength: 4,
-          decoration: const InputDecoration(labelText: 'Bank PIN'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, pin.text),
-            child: const Text('Redeem'),
-          ),
-        ],
-      ),
-    );
-    pin.dispose();
-    if (enteredPin == null || !context.mounted) return;
-    final result = await controller.redeemGoal(goal.id, enteredPin);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          result.isSuccess
-              ? 'Goal redeemed. Your Bank is unlocked.'
-              : 'Could not redeem the goal. Check your PIN and try again.',
         ),
       ),
     );

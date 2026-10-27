@@ -31,37 +31,48 @@ class StatGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.35,
+    // Rows of equal-height tiles that grow with the system text scale, so the
+    // tile content never overflows on narrow screens or at large text scales.
+    final tiles = <Widget>[
+      StatTile(
+        icon: Icons.today_outlined,
+        label: 'Today',
+        value: formatPeso(todayTotal),
+      ),
+      StatTile(
+        icon: Icons.calendar_view_week_outlined,
+        label: 'This week',
+        value: formatPeso(weekTotal),
+      ),
+      StatTile(
+        icon: Icons.savings_outlined,
+        label: 'Total deposits',
+        value:
+            '$totalDepositsCount deposit${totalDepositsCount == 1 ? '' : 's'}',
+      ),
+      StatTile(
+        icon: Icons.schedule_outlined,
+        label: 'Last deposit',
+        value: lastDepositTime == null
+            ? '—'
+            : formatDateTime(lastDepositTime!, now),
+      ),
+    ];
+    return Column(
       children: [
-        StatTile(
-          icon: Icons.today_outlined,
-          label: 'Today',
-          value: formatPeso(todayTotal),
-        ),
-        StatTile(
-          icon: Icons.calendar_view_week_outlined,
-          label: 'This week',
-          value: formatPeso(weekTotal),
-        ),
-        StatTile(
-          icon: Icons.savings_outlined,
-          label: 'Total deposits',
-          value:
-              '$totalDepositsCount deposit${totalDepositsCount == 1 ? '' : 's'}',
-        ),
-        StatTile(
-          icon: Icons.schedule_outlined,
-          label: 'Last deposit',
-          value: lastDepositTime == null
-              ? '—'
-              : formatDateTime(lastDepositTime!, now),
-        ),
+        for (var i = 0; i < tiles.length; i += 2) ...[
+          if (i > 0) const SizedBox(height: 12),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: tiles[i]),
+                const SizedBox(width: 12),
+                Expanded(child: tiles[i + 1]),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

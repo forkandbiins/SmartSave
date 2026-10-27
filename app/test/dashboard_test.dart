@@ -171,6 +171,67 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'Dashboard renders without overflow at width 320 and text scale 1.5',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final state = DemoFixtures.demoState();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(1.5)),
+            child: Scaffold(body: buildFromState(state)),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Recent deposits'), findsOneWidget);
+      expect(find.text('Today'), findsOneWidget);
+      expect(find.text('This week'), findsOneWidget);
+      expect(find.text('Total deposits'), findsOneWidget);
+      expect(find.text('Last deposit'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Fresh profile shows friendly empty states, not ₱0, at width 320',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      final state = SmartSaveState(
+        mode: SmartSaveMode.mock,
+        link: LinkState.ready,
+        auth: AuthState.loggedIn,
+        lock: LockState.locked,
+        deviceTotal: null,
+        syncStatus: SyncStatus.idle,
+        goals: const [],
+        transactions: const [],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(1.5)),
+            child: Scaffold(body: buildFromState(state)),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Not synced yet'), findsOneWidget);
+      expect(find.text('No goal yet'), findsOneWidget);
+      expect(find.text('No transactions yet'), findsOneWidget);
+    },
+  );
+
   testWidgets('Total deposits tile shows the deposit count, not a peso sum', (
     tester,
   ) async {
