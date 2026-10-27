@@ -36,7 +36,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
       from = DateTime(now.year, now.month);
       to = DateTime(now.year, now.month + 1);
     }
-    return widget.controller.getTransactions(TransactionQuery(from: from, to: to));
+    return widget.controller.getTransactions(
+      TransactionQuery(from: from, to: to),
+    );
+  }
+
+  ButtonSegment<_HistoryFilter> _segment(String label, _HistoryFilter value) {
+    final selected = _filter == value;
+    return ButtonSegment(
+      value: value,
+      // Keep the label on one line: shrink it down instead of wrapping.
+      label: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          label,
+          maxLines: 1,
+          softWrap: false,
+          // Selected state stays obvious without color alone: bold weight plus
+          // the selected segment background.
+          style: TextStyle(
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -56,14 +79,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                 child: SegmentedButton<_HistoryFilter>(
-                  segments: const [
-                    ButtonSegment(value: _HistoryFilter.all, label: Text('All')),
-                    ButtonSegment(value: _HistoryFilter.today, label: Text('Today')),
-                    ButtonSegment(value: _HistoryFilter.week, label: Text('Week')),
-                    ButtonSegment(value: _HistoryFilter.month, label: Text('Month')),
+                  // The check icon steals width from the label and forces
+                  // short labels like "Today" to wrap on narrow screens.
+                  showSelectedIcon: false,
+                  segments: [
+                    _segment('All', _HistoryFilter.all),
+                    _segment('Today', _HistoryFilter.today),
+                    _segment('Week', _HistoryFilter.week),
+                    _segment('Month', _HistoryFilter.month),
                   ],
                   selected: {_filter},
-                  onSelectionChanged: (value) => setState(() => _filter = value.first),
+                  onSelectionChanged: (value) =>
+                      setState(() => _filter = value.first),
                 ),
               ),
             ),
@@ -83,8 +110,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   itemCount: transactions.length,
                   itemBuilder: (context, index) {
                     final transaction = transactions[index];
-                    final showDate = index == 0 ||
-                        !_sameDay(transaction.timestamp, transactions[index - 1].timestamp);
+                    final showDate =
+                        index == 0 ||
+                        !_sameDay(
+                          transaction.timestamp,
+                          transactions[index - 1].timestamp,
+                        );
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -98,7 +129,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                         Card(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             child: RecentDepositTile(
                               transaction: transaction,
                               now: DateTime.now(),

@@ -5,6 +5,7 @@ import '../features/dashboard/dashboard_screen.dart';
 import '../features/history/history_screen.dart';
 import '../features/goals/widgets/goal_card.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/statistics/statistics_screen.dart';
 import 'theme.dart';
 
 /// Logged-in shell with five tabs. Goal lists [SmartSaveState.goals]; other tabs are placeholders.
@@ -33,7 +34,7 @@ class _HomeShellState extends State<HomeShell> {
             DashboardScreen(controller: widget.controller),
             HistoryScreen(controller: widget.controller),
             _GoalsTab(controller: widget.controller),
-            const _PlaceholderTab('Stats'),
+            StatisticsScreen(controller: widget.controller),
             SettingsScreen(controller: widget.controller),
           ],
         ),
@@ -84,17 +85,6 @@ class _HomeShellState extends State<HomeShell> {
         ),
       ),
     );
-  }
-}
-
-class _PlaceholderTab extends StatelessWidget {
-  const _PlaceholderTab(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(child: Text(label));
   }
 }
 
