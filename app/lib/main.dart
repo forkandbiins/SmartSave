@@ -35,9 +35,11 @@ Future<void> _startWithMode(
   await backend.initialize();
   if (mode == SmartSaveMode.ble) {
     await backend.controller.ensureBluetoothReady();
+  } else {
+    backend.mockControls?.startAutoCoins(const Duration(seconds: 5));
   }
   if (demoProfile) {
     await devAutoLogin(backend.controller);
   }
-  runApp(SmartSaveApp(controller: backend.controller));
+  runApp(SmartSaveApp(backend: backend));
 }

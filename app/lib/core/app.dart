@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:smartsave_backend/smartsave_backend.dart';
 
@@ -6,10 +8,10 @@ import 'theme.dart';
 
 /// Root widget for the SmartSave UI.
 class SmartSaveApp extends StatelessWidget {
-  const SmartSaveApp({super.key, required this.controller});
+  const SmartSaveApp({super.key, required this.backend});
 
-  /// Backend controller created once in `main`.
-  final SmartSaveController controller;
+  /// Backend created once in `main`.
+  final SmartSaveBackend backend;
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +19,28 @@ class SmartSaveApp extends StatelessWidget {
       title: 'SmartSave',
       debugShowCheckedModeBanner: false,
       theme: smartSaveTheme,
-      home: AppGate(controller: controller),
+      home: _AppLifetime(backend: backend),
     );
   }
+}
+
+final class _AppLifetime extends StatefulWidget {
+  const _AppLifetime({required this.backend});
+
+  final SmartSaveBackend backend;
+
+  @override
+  State<_AppLifetime> createState() => _AppLifetimeState();
+}
+
+final class _AppLifetimeState extends State<_AppLifetime> {
+  @override
+  void dispose() {
+    unawaited(widget.backend.dispose());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      AppGate(controller: widget.backend.controller);
 }
