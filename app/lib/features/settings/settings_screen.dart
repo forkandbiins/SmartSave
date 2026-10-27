@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart' hide LockState;
 import 'package:smartsave_backend/smartsave_backend.dart';
 
 import '../../core/format.dart';
 import '../../core/theme.dart';
+import '../../shared/widgets/smart_save_scaffold.dart';
 import '../connection/connection_screen.dart';
 
 /// Bank status, PIN, balance correction, and local data controls.
@@ -13,41 +16,13 @@ class SettingsScreen extends StatelessWidget {
   final SmartSaveController controller;
 
   Future<void> _changePin(BuildContext context) async {
-    final pin = TextEditingController();
-    final result = await showDialog<String>(
+    final changed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Change PIN'),
-        content: TextField(
-          controller: pin,
-          obscureText: true,
-          keyboardType: TextInputType.number,
-          maxLength: 4,
-          decoration: const InputDecoration(labelText: 'New 4-digit PIN'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, pin.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (context) => _ChangePinDialog(controller: controller),
     );
-    pin.dispose();
-    if (result == null || !context.mounted) return;
-    final action = await controller.changePin(result);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          action.isSuccess ? 'PIN changed.' : friendlyError(action.errorOrNull),
-        ),
-      ),
-    );
+    if (changed != true || !context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('PIN changed.')));
   }
 
   Future<void> _adjustBalance(BuildContext context) async {
@@ -273,6 +248,240 @@ class SettingsScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Wrong current-PIN attempts allowed before the dialog pauses the form.
+///
+/// The device uses `ProtocolLimits.maxFailedPins`, which the backend package
+/// does not export, so the limit is mirrored here as a local constant.
+const int _maxWrongPinAttempts = 3;
+
+/// Three-field Change PIN dialog that verifies the current PIN on the device.
+///
+/// `SmartSaveController.changePin` reports a failure but does not track wrong
+/// attempts nor flip the app into a locked-out state, so this dialog owns the
+/// attempt counter, the "tries left" copy and the lockout countdown.
+class _ChangePinDialog extends StatefulWidget {
+  const _ChangePinDialog({required this.controller});
+
+  /// Backend controller used to verify and change the PIN.
+  final SmartSaveController controller;
+
+  @override
+  State<_ChangePinDialog> createState() => _ChangePinDialogState();
+}
+
+class _ChangePinDialogState extends State<_ChangePinDialog> {
+  final TextEditingController _current = TextEditingController();
+  final TextEditingController _newPin = TextEditingController();
+  final TextEditingController _confirm = TextEditingController();
+
+  String? _currentError;
+  String? _newError;
+  String? _confirmError;
+  String? _attemptMessage;
+  bool _busy = false;
+  int _wrongAttempts = 0;
+  DateTime? _lockedUntil;
+  Timer? _countdown;
+
+  bool get _locked => _lockedUntil != null;
+
+  Duration get _lockoutDuration => widget.controller.config.lockoutDuration;
+
+  int get _remainingSeconds {
+    final until = _lockedUntil;
+    if (until == null) return 0;
+    final left = until.difference(widget.controller.clock.now()).inSeconds;
+    return left < 0 ? 0 : left;
+  }
+
+  String? get _notice {
+    if (_locked) {
+      return 'Too many incorrect attempts. '
+          'Try again in ${_remainingSeconds}s.';
+    }
+    return _attemptMessage;
+  }
+
+  @override
+  void dispose() {
+    // Disposing the controllers drops all three PIN fields on close; the PINs
+    // are never logged or persisted.
+    _countdown?.cancel();
+    _current.dispose();
+    _newPin.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  static bool _isFourDigits(String value) => RegExp(r'^\d{4}$').hasMatch(value);
+
+  void _startCountdown() {
+    _countdown?.cancel();
+    _countdown = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      if (_remainingSeconds <= 0) {
+        _countdown?.cancel();
+        setState(() {
+          _lockedUntil = null;
+          _wrongAttempts = 0;
+          _attemptMessage = null;
+        });
+      } else {
+        setState(() {});
+      }
+    });
+  }
+
+  void _lockFor(DateTime until) {
+    setState(() {
+      _lockedUntil = until;
+      _wrongAttempts = _maxWrongPinAttempts;
+      _attemptMessage = null;
+    });
+    _startCountdown();
+  }
+
+  Future<void> _save() async {
+    final current = _current.text;
+    final next = _newPin.text;
+    final confirm = _confirm.text;
+
+    final currentError = _isFourDigits(current)
+        ? null
+        : 'Enter your current 4-digit PIN.';
+    final String? newError;
+    if (!_isFourDigits(next)) {
+      newError = 'Enter a new 4-digit PIN.';
+    } else if (next == current) {
+      newError = 'Choose a PIN different from your current one.';
+    } else {
+      newError = null;
+    }
+    final confirmError = confirm == next ? null : 'The new PINs do not match.';
+
+    setState(() {
+      _currentError = currentError;
+      _newError = newError;
+      _confirmError = confirmError;
+      _attemptMessage = null;
+    });
+    if (currentError != null || newError != null || confirmError != null) {
+      return;
+    }
+
+    setState(() => _busy = true);
+    final action = await widget.controller.changePin(next, oldPin: current);
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    if (action.isSuccess) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    _handleFailure(action.errorOrNull);
+  }
+
+  void _handleFailure(SmartSaveError? error) {
+    final now = widget.controller.clock.now();
+    if (error is AuthError && error.code == SmartSaveErrorCode.lockedOut) {
+      _lockFor(error.until ?? now.add(_lockoutDuration));
+      return;
+    }
+    if (error is AuthError && error.code == SmartSaveErrorCode.wrongPin) {
+      final attempts = _wrongAttempts + 1;
+      if (attempts >= _maxWrongPinAttempts) {
+        _lockFor(now.add(_lockoutDuration));
+      } else {
+        setState(() {
+          _wrongAttempts = attempts;
+          _attemptMessage =
+              'Incorrect PIN. ${_maxWrongPinAttempts - attempts} tries left.';
+        });
+      }
+      return;
+    }
+    setState(() => _attemptMessage = friendlyError(error));
+  }
+
+  Widget _field({
+    required TextEditingController controller,
+    required String label,
+    required bool enabled,
+    String? errorText,
+    VoidCallback? onSubmitted,
+  }) {
+    return TextField(
+      controller: controller,
+      enabled: enabled,
+      obscureText: true,
+      keyboardType: TextInputType.number,
+      maxLength: 4,
+      onSubmitted: onSubmitted == null ? null : (_) => onSubmitted(),
+      decoration: InputDecoration(labelText: label, errorText: errorText),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = !_busy && !_locked;
+    final notice = _notice;
+    return AlertDialog(
+      title: const Text('Change PIN'),
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (notice != null) ...[
+            SmartSaveErrorText(message: notice),
+            const SizedBox(height: 12),
+          ],
+          // TODO: gate this on a 24-hour PIN-change cooldown. The backend
+          // exposes no PIN-created timestamp, so a canChangePinAt check cannot
+          // be implemented yet.
+          _field(
+            controller: _current,
+            label: 'Current PIN',
+            enabled: enabled,
+            errorText: _currentError,
+            onSubmitted: _save,
+          ),
+          const SizedBox(height: 12),
+          _field(
+            controller: _newPin,
+            label: 'New PIN',
+            enabled: enabled,
+            errorText: _newError,
+          ),
+          const SizedBox(height: 12),
+          _field(
+            controller: _confirm,
+            label: 'Confirm new PIN',
+            enabled: enabled,
+            errorText: _confirmError,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: enabled ? _save : null,
+          child: _busy
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Save'),
+        ),
+      ],
     );
   }
 }
