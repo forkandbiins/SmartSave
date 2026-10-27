@@ -6,11 +6,17 @@ import '../../../core/mascot.dart';
 import '../../../core/theme.dart';
 
 /// Shows the active goal's progress, or a friendly empty state.
+///
+/// When [onOpenGoals] is provided, a button switches to the Goal tab: a
+/// "View goal" button when a goal exists, otherwise "Create a goal".
 class GoalProgressCard extends StatelessWidget {
-  const GoalProgressCard({super.key, required this.goal});
+  const GoalProgressCard({super.key, required this.goal, this.onOpenGoals});
 
   /// The active goal to display, or null when there is none.
   final SavingsGoal? goal;
+
+  /// Called when the goal-tab button is pressed.
+  final VoidCallback? onOpenGoals;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +42,14 @@ class GoalProgressCard extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
+              if (onOpenGoals != null) ...[
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: onOpenGoals,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Create a goal'),
+                ),
+              ],
             ],
           ),
         ),
@@ -81,6 +95,17 @@ class GoalProgressCard extends StatelessWidget {
                 color: SmartSaveTokens.inkSoft,
               ),
             ),
+            if (onOpenGoals != null) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: onOpenGoals,
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('View goal'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
