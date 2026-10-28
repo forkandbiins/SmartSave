@@ -33,6 +33,18 @@ void main() {
     await transport.dispose();
   });
 
+  test('discovers service advertisers without relying on their name', () async {
+    final gateway = _FakeBleGateway()
+      ..scanResult = const BleScanResult(id: 'bank', name: '');
+    final transport = Hm10BleTransport(gateway);
+
+    expect(await transport.scan().toList(), [
+      const DiscoveredBank(id: 'bank', name: ''),
+    ]);
+    expect(gateway.scannedServiceUuid, 'FFE0');
+    await transport.dispose();
+  });
+
   test('assembles notification fragments into complete lines', () async {
     final gateway = _FakeBleGateway();
     final transport = Hm10BleTransport(gateway);
@@ -97,16 +109,19 @@ final class _FakeBleGateway implements BleGateway {
   final notificationsController = StreamController<List<int>>.broadcast();
   final writes = <List<int>>[];
   bool hasCharacteristic = true;
+  String? scannedServiceUuid;
+  BleScanResult scanResult = const BleScanResult(id: 'bank', name: 'HMSoft');
 
   @override
   Stream<BleAdapterStatus> get statusStream => statusController.stream;
 
   @override
   Stream<BleScanResult> scan({
-    required List<String> namePrefixes,
+    required String serviceUuid,
     required Duration timeout,
   }) async* {
-    yield const BleScanResult(id: 'bank', name: 'HMSoft');
+    scannedServiceUuid = serviceUuid;
+    yield scanResult;
   }
 
   @override

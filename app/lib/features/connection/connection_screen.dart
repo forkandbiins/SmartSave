@@ -63,7 +63,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   @override
   Widget build(BuildContext context) {
     final link = widget.controller.state.link;
-    final connecting = link == LinkState.scanning ||
+    final connecting =
+        link == LinkState.scanning ||
         link == LinkState.connecting ||
         link == LinkState.handshaking;
     return Scaffold(
@@ -80,14 +81,20 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
             if (_error != null) SmartSaveErrorText(message: _error!),
             if (_error != null) const SizedBox(height: 12),
             if (connecting || _busy)
-              const Card(
+              Card(
                 child: Padding(
                   padding: EdgeInsets.all(20),
                   child: Row(
                     children: [
-                      CircularProgressIndicator(),
+                      const CircularProgressIndicator(),
                       SizedBox(width: 16),
-                      Expanded(child: Text('Looking for your Bank…')),
+                      Expanded(
+                        child: Text(
+                          link == LinkState.scanning
+                              ? 'Scanning for your Bank…'
+                              : 'Connecting to your Bank…',
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -104,10 +111,19 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                   child: ListTile(
                     leading: const CircleAvatar(
                       backgroundColor: SmartSaveTokens.primarySoft,
-                      child: Icon(Icons.savings_outlined, color: SmartSaveTokens.ink),
+                      child: Icon(
+                        Icons.savings_outlined,
+                        color: SmartSaveTokens.ink,
+                      ),
                     ),
-                    title: Text(bank.name.isEmpty ? 'SmartSave Bank' : bank.name),
-                    subtitle: Text(bank.rssi == null ? 'Available nearby' : 'Signal ${bank.rssi} dBm'),
+                    title: Text(
+                      bank.name.isEmpty ? 'SmartSave Bank' : bank.name,
+                    ),
+                    subtitle: Text(
+                      bank.rssi == null
+                          ? 'Available nearby'
+                          : 'Signal ${bank.rssi} dBm',
+                    ),
                     trailing: FilledButton(
                       onPressed: () => _connect(bank),
                       child: const Text('Connect'),
@@ -169,6 +185,16 @@ String friendlyError(SmartSaveError? error) {
       return 'That action is not available right now.';
     case SmartSaveErrorCode.connectionLost:
       return 'The Bank connection was lost. Reconnect and try again.';
+    case SmartSaveErrorCode.connectFailed:
+      return 'Could not connect to your Bank. Make sure it is on and nearby, then try again.';
+    case SmartSaveErrorCode.serviceNotFound:
+      return 'The selected device does not provide the SmartSave Bluetooth service. Check that you selected your Bank.';
+    case SmartSaveErrorCode.commandTimeout:
+      return 'Your Bank connected but did not respond. Check its power and try again.';
+    case SmartSaveErrorCode.unsupportedVersion:
+      return 'This Bank uses an unsupported protocol version.';
+    case SmartSaveErrorCode.unexpectedReply:
+      return 'Your Bank sent an unexpected reply. Reconnect and try again.';
     default:
       return 'Something went wrong. Please try again.';
   }

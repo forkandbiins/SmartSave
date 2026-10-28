@@ -83,7 +83,7 @@ final class _FakeGateway implements BleGateway {
 
   @override
   Stream<BleScanResult> scan({
-    required List<String> namePrefixes,
+    required String serviceUuid,
     required Duration timeout,
   }) async* {}
 
