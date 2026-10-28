@@ -37,9 +37,9 @@ abstract interface class BleGateway {
   /// Adapter status changes.
   Stream<BleAdapterStatus> get statusStream;
 
-  /// Scans for devices whose names start with one of [namePrefixes].
+  /// Scans for devices advertising [serviceUuid].
   Stream<BleScanResult> scan({
-    required List<String> namePrefixes,
+    required String serviceUuid,
     required Duration timeout,
   });
 

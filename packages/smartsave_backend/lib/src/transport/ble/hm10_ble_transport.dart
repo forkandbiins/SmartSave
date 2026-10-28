@@ -24,7 +24,8 @@ final class Hm10BleTransport implements DeviceTransport {
   /// BLE gateway used by this transport.
   final BleGateway gateway;
 
-  /// Advertised-name prefixes accepted during scanning.
+  /// Advertised-name prefixes retained for compatibility with gateway
+  /// implementations that provide names during service-filtered scans.
   final List<String> namePrefixes;
 
   /// Maximum connection duration.
@@ -51,7 +52,7 @@ final class Hm10BleTransport implements DeviceTransport {
     Duration timeout = Hm10Constants.connectTimeout,
   }) async* {
     await for (final device in gateway.scan(
-      namePrefixes: namePrefixes,
+      serviceUuid: Hm10Constants.serviceUuid,
       timeout: timeout,
     )) {
       yield DiscoveredBank(id: device.id, name: device.name);
